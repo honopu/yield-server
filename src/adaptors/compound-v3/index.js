@@ -13,6 +13,14 @@ const markets = [
     chain: 'ethereum',
   },
   {
+    address: '0x3Afdc9BCA9213A35503b077a6072F3D0d5AB0840',
+    symbol: 'cUSDTv3',
+    underlying: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
+    underlyingSymbol: 'USDT',
+    rewardToken: '0xc00e94Cb662C3520282E6f5717214004A7f26888',
+    chain: 'ethereum',
+  },
+  {
     address: '0xA17581A9E3356d9A858b789D68B4d866e593aE94',
     symbol: 'cWETHv3',
     underlying: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
@@ -113,6 +121,14 @@ const markets = [
     symbol: 'cUSDTv3',
     underlying: '0x94b008aA00579c1307B0EF2c499aD98a8ce58e58',
     underlyingSymbol: 'USDT',
+    rewardToken: '0x7e7d4467112689329f7E06571eD0E8CbAd4910eE',
+    chain: 'optimism',
+  },
+  {
+    address: '0xE36A30D249f7761327fd973001A32010b521b6Fd',
+    symbol: 'cWETHv3',
+    underlying: '0x4200000000000000000000000000000000000006',
+    underlyingSymbol: 'WETH',
     rewardToken: '0x7e7d4467112689329f7E06571eD0E8CbAd4910eE',
     chain: 'optimism',
   },
@@ -233,7 +249,7 @@ const main = async (pool) => {
 
   // 1) collateral pools (no apy fields)
   const collateralOnlyPools = tokens.map((t, i) => ({
-    pool: `${t}-${pool.symbol}`,
+    pool: `${t}-${pool.symbol}-${pool.chain}`,
     symbol: symbols[i],
     chain: pool.chain.charAt(0).toUpperCase() + pool.chain.slice(1),
     project: 'compound-v3',
@@ -276,10 +292,7 @@ const main = async (pool) => {
   return [
     ...collateralOnlyPools,
     {
-      pool:
-        pool.address === '0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf'
-          ? `${pool.address}-${pool.chain}`
-          : pool.address, // Fix for duplicated pool id
+      pool: `${pool.address}-${pool.chain}`,
       symbol: pool.underlyingSymbol,
       chain: pool.chain.charAt(0).toUpperCase() + pool.chain.slice(1),
       project: 'compound-v3',

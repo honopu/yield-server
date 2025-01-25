@@ -7,6 +7,7 @@ const {
   CRV_API_BASE_URL,
   BLOCKCHAINIDS,
   BLOCKCHAINID_TO_REGISTRIES,
+  OVERRIDE_DATA,
 } = require('./config');
 
 const assetTypeMapping = {
@@ -324,21 +325,6 @@ const main = async () => {
         ); // CRV
       }
 
-      // separate reward tokens (eg OP on curve optimism), adding this to aprExtra if available
-      if (['optimism', 'kava'].includes(blockchainId)) {
-        const x = factoryAprData.find(
-          (x) => x.gauge?.toLowerCase() === pool.gaugeAddress?.toLowerCase()
-        );
-        const extraRewardsFactory = x?.extraRewards
-          .filter((i) => i.apyData.isRewardStillActive)
-          .map((i) => i.apy)
-          .reduce((a, b) => a + b, 0);
-
-        if (extraRewardsFactory > 0) {
-          aprExtra += extraRewardsFactory;
-          rewardTokens.push(x.extraRewards.map((i) => i.tokenAddress));
-        }
-      }
       // note(!) curve api uses coingecko prices and am3CRV is wrongly priced
       // this leads to pool.usdTotal to be inflated, going to hardcode temporarly hardcode this
       // to 1usd
@@ -363,11 +349,17 @@ const main = async () => {
         continue;
       }
 
+      const overrideData = OVERRIDE_DATA?.[blockchainId]?.[address];
+      const symbol =
+        overrideData?.symbol || pool.coins.map((coin) => coin.symbol).join('-');
+      const url =
+        overrideData?.url || `https://curve.fi/#/${blockchainId}/pools`;
+
       defillamaPooldata.push({
         pool: address + '-' + blockchainId,
         chain: utils.formatChain(blockchainId),
         project: 'curve-dex',
-        symbol: pool.coins.map((coin) => coin.symbol).join('-'),
+        symbol,
         tvlUsd,
         apyBase,
         apyReward:
@@ -384,7 +376,7 @@ const main = async () => {
           .flat()
           .filter((i) => i !== '0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32'),
         underlyingTokens,
-        url: `https://curve.fi/#/${blockchainId}/pools`,
+        url,
       });
     }
   };
@@ -415,6 +407,7 @@ const main = async () => {
   const correct = [
     '0x7f90122BF0700F9E7e1F688fe926940E8839F353-avalanche',
     '0x0f9cb53Ebe405d49A0bbdBD291A65Ff571bC83e1-ethereum',
+    '0x7f90122BF0700F9E7e1F688fe926940E8839F353-xdai',
   ];
   return defillamaPooldata.map((p) => ({
     ...p,

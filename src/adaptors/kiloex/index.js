@@ -29,6 +29,11 @@ const chains = {
     kUSDT: '0xB20Faa4BA0DdEbDe49299557f4F1ebB5532745e3',
     apyEndpoint: 'https://b2api.kiloex.io/common/queryKiloNewVaultApyHistory',
     htokens:'https://b2api.kiloex.io/vault/hTokens'
+  },
+   base: {
+    kUSDT: '0xdf5ACC616cD3ea9556EC340a11B54859a393ebBB',
+    apyEndpoint: 'https://baseapi.kiloex.io/common/queryKiloNewVaultApyHistory',
+    htokens:'https://baseapi.kiloex.io/vault/hTokens'
   }
 };
 
@@ -41,26 +46,31 @@ const getApy = async () => {
       const hTokensData = (await axios.get(y.htokens)).data.data;
       const apr = hTokensData.apy
       for (const key in hTokensData.tokens) {
-        const token = hTokensData.tokens[key];
-        const balance =
-          (
-            await sdk.api.abi.call({
-              target: token.originToken,
-              abi: 'erc20:balanceOf',
-              params: [y.kUSDT],
+        try {
+            const token = hTokensData.tokens[key];
+            const balance =
+              (
+                await sdk.api.abi.call({
+                  target: token.originToken,
+                  abi: 'erc20:balanceOf',
+                  params: [y.kUSDT],
+                  chain,
+                })
+              ).output / token.tokenPrecision;
+    
+            results.push({
               chain,
-            })
-          ).output / token.tokenPrecision;
-
-        results.push({
-          chain,
-          project: 'kiloex',
-          pool: token.originToken,
-          symbol: token.tokenName,
-          tvlUsd: balance * token.price,
-          apyBase: parseFloat((apr * 100 * token.ltv /10000).toFixed(2)),
-          underlyingTokens: [token.originToken],
-        });
+              project: 'kiloex',
+              pool: token.originToken,
+              symbol: token.tokenName,
+              tvlUsd: balance * token.price,
+              apyBase: parseFloat((apr * 100 * token.ltv /10000).toFixed(2)),
+              underlyingTokens: [token.originToken],
+            });
+        } catch(e) {
+          //skip error
+        }
+        
       }
       // if (chain === 'manta') {
       //   const stoneBalance =
@@ -94,7 +104,7 @@ const getApy = async () => {
     })
   );
 
-  return pools.flat();
+  return utils.removeDuplicates(pools.flat())
 };
 
 module.exports = {
